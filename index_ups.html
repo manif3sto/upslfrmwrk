@@ -1,0 +1,856 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Upsaley Auto-Audit</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Reddit+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#F5F5F7;--bg2:#fff;--bg3:#F2F2F5;--bg4:#EBEBF0;
+  --border:#E0E0E8;--border2:#D0D0DC;
+  --text:#1D1D1F;--text2:#515154;--text3:#86868B;--text4:#AEAEB2;
+  --accent:#0071E3;--accent-bg:#E8F1FC;
+  --green:#059669;--green-bg:#ECFDF5;--green-dark:#047857;
+  --amber:#D97706;--amber-bg:#FFFBEB;
+  --red:#DC2626;--red-bg:#FEF2F2;
+  --purple:#4F46E5;--purple-bg:#EEF2FF;
+  --font-head:'Instrument Serif',Georgia,serif;
+  --font-body:'Reddit Sans',sans-serif;
+  --r:12px;--r-lg:16px;--r-xl:20px;
+  --sh:0 1px 3px rgba(0,0,0,.06),0 1px 2px rgba(0,0,0,.04);
+  --sh-md:0 4px 16px rgba(0,0,0,.08),0 1px 4px rgba(0,0,0,.04);
+  --sh-lg:0 8px 32px rgba(0,0,0,.10),0 2px 8px rgba(0,0,0,.06);
+}
+html{-webkit-font-smoothing:antialiased}
+body{background:var(--bg);color:var(--text);font-family:var(--font-body);font-size:14px;line-height:1.5;min-height:100vh}
+
+/* LAYOUT */
+.app{max-width:860px;margin:0 auto;padding:32px 24px 80px}
+
+/* HEADER */
+.app-header{margin-bottom:32px;text-align:center}
+.app-title{font-family:var(--font-head);font-size:32px;color:var(--text);letter-spacing:-.02em;margin-bottom:6px}
+.app-sub{font-size:14px;color:var(--text3);max-width:480px;margin:0 auto}
+
+/* SETUP CARD */
+.setup-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r-xl);padding:28px;box-shadow:var(--sh-md);margin-bottom:20px}
+.setup-title{font-family:var(--font-head);font-size:20px;color:var(--text);margin-bottom:4px}
+.setup-sub{font-size:13px;color:var(--text3);margin-bottom:20px}
+.api-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px}
+@media(max-width:580px){.api-grid{grid-template-columns:1fr}}
+.field-label{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px}
+.field-input{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:9px 12px;font-size:13px;color:var(--text);font-family:var(--font-body);outline:none;transition:border-color .15s,box-shadow .15s}
+.field-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(0,113,227,.1)}
+.field-input::placeholder{color:var(--text4)}
+.api-hint{font-size:11px;color:var(--text4);margin-top:4px}
+.api-hint a{color:var(--accent);text-decoration:none}
+.api-hint a:hover{text-decoration:underline}
+.url-row{display:flex;gap:10px;align-items:flex-start}
+.url-input-wrap{flex:1}
+.url-row input{width:100%}
+
+/* BUTTONS */
+.btn{padding:10px 22px;border-radius:var(--r);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font-body);border:none;transition:all .15s;white-space:nowrap;display:inline-flex;align-items:center;gap:7px}
+.btn-primary{background:var(--accent);color:#fff;box-shadow:0 2px 8px rgba(0,113,227,.25)}
+.btn-primary:hover{background:#005BB5;box-shadow:0 4px 16px rgba(0,113,227,.35)}
+.btn-primary:disabled{background:var(--text4);box-shadow:none;cursor:not-allowed}
+.btn-ghost{background:var(--bg3);color:var(--text2);border:1px solid var(--border)}
+.btn-ghost:hover{background:var(--bg4)}
+
+/* PROGRESS */
+.progress-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r-xl);padding:28px;box-shadow:var(--sh-md);margin-bottom:20px;display:none}
+.progress-title{font-family:var(--font-head);font-size:18px;color:var(--text);margin-bottom:16px}
+.progress-steps{display:flex;flex-direction:column;gap:8px}
+.prog-step{display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:var(--r);border:1px solid var(--border);background:var(--bg3);transition:all .3s}
+.prog-step.active{background:var(--accent-bg);border-color:#BFDBFE}
+.prog-step.done{background:var(--green-bg);border-color:#A7F3D0}
+.prog-step.error{background:var(--red-bg);border-color:#FECACA}
+.prog-icon{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+.prog-icon.spin{animation:spin .8s linear infinite}
+@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+.prog-label{font-size:13px;font-weight:500;color:var(--text)}
+.prog-detail{font-size:11px;color:var(--text3);margin-top:2px}
+
+/* FOLLOW-UP */
+.followup-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r-xl);padding:28px;box-shadow:var(--sh-md);margin-bottom:20px;display:none}
+.followup-title{font-family:var(--font-head);font-size:20px;margin-bottom:6px}
+.followup-sub{font-size:13px;color:var(--text3);margin-bottom:22px}
+.q-list{display:flex;flex-direction:column;gap:14px}
+.q-item{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px}
+.q-label{font-size:12px;font-weight:600;color:var(--text);margin-bottom:8px;display:flex;align-items:center;gap:7px}
+.q-dim{font-size:10px;padding:2px 8px;border-radius:20px;font-weight:600}
+.q-options{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.q-opt{padding:5px 13px;border-radius:20px;border:1px solid var(--border2);font-size:12px;cursor:pointer;background:var(--bg2);color:var(--text2);transition:all .15s;font-family:var(--font-body);font-weight:400}
+.q-opt:hover{border-color:var(--accent);color:var(--accent)}
+.q-opt.selected{background:var(--accent);color:#fff;border-color:var(--accent);font-weight:500}
+.q-text{width:100%;margin-top:8px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:12px;color:var(--text);font-family:var(--font-body);resize:none;outline:none;line-height:1.5}
+.q-text:focus{border-color:var(--accent)}
+.followup-actions{display:flex;gap:10px;margin-top:20px;justify-content:flex-end}
+
+/* RESULTS */
+.results-section{display:none}
+.results-header{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:20px}
+.results-title{font-family:var(--font-head);font-size:24px;color:var(--text)}
+.results-url{font-size:12px;color:var(--text3);margin-top:2px}
+.score-hero{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r-xl);padding:24px 28px;box-shadow:var(--sh-md);margin-bottom:16px;display:flex;align-items:center;gap:24px;flex-wrap:wrap}
+.score-big{font-family:var(--font-head);font-size:64px;font-weight:400;letter-spacing:-.03em;line-height:1}
+.score-meta{flex:1;min-width:180px}
+.score-verdict{font-size:18px;font-weight:600;margin-bottom:4px}
+.score-desc{font-size:13px;color:var(--text2);line-height:1.6}
+.score-bar-h{height:8px;background:var(--bg4);border-radius:4px;overflow:hidden;margin-top:12px}
+.score-bar-h-fill{height:100%;border-radius:4px;transition:width .8s cubic-bezier(.4,0,.2,1)}
+
+/* DIM RESULTS */
+.dims-grid{display:flex;flex-direction:column;gap:8px;margin-bottom:20px}
+.dim-result{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden;box-shadow:var(--sh);transition:box-shadow .2s}
+.dim-result:hover{box-shadow:var(--sh-md)}
+.dim-r-head{display:flex;align-items:center;gap:12px;padding:12px 16px;cursor:pointer;transition:background .1s}
+.dim-r-head:hover{background:var(--bg3)}
+.dim-r-num{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0}
+.dim-r-info{flex:1;min-width:0}
+.dim-r-title{font-size:13px;font-weight:500;color:var(--text)}
+.dim-r-verdict{font-size:11px;color:var(--text3);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dim-r-score{font-size:22px;font-weight:600;font-family:var(--font-head);flex-shrink:0;min-width:40px;text-align:right}
+.dim-r-bar{height:3px;background:var(--bg4);overflow:hidden}
+.dim-r-bar-fill{height:100%;transition:width .6s ease}
+.dim-r-body{display:none;padding:0 16px 16px;border-top:1px solid var(--border)}
+.dim-r-body.open{display:block}
+
+/* SECTIONS IN DIM BODY */
+.r-section{margin-top:14px}
+.r-label{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--text4);margin-bottom:7px}
+.finding-box{background:var(--bg3);border-radius:var(--r);padding:12px 14px;font-size:13px;color:var(--text2);line-height:1.7;border:1px solid var(--border)}
+.action-list{display:flex;flex-direction:column;gap:6px}
+.action-item{display:flex;align-items:flex-start;gap:10px;padding:9px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r)}
+.action-prio{width:20px;height:20px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff;margin-top:1px}
+.action-text{font-size:12px;color:var(--text2);line-height:1.55;flex:1}
+.action-text b{color:var(--text);font-weight:600}
+.lift-chip{display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:3px 9px;border-radius:20px;background:var(--green-bg);color:var(--green-dark);border:1px solid #A7F3D0;font-weight:600;margin-right:5px}
+.warn-chip{background:var(--amber-bg);color:#92400E;border-color:#FDE68A}
+.crit-chip{background:var(--red-bg);color:var(--red);border-color:#FECACA}
+
+/* EXPORT BAR */
+.export-bar{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r-lg);padding:16px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;box-shadow:var(--sh)}
+.export-info{font-size:13px;color:var(--text2)}
+.export-btns{display:flex;gap:8px}
+
+/* SOURCE BADGE */
+.source-badge{font-size:10px;padding:2px 8px;border-radius:20px;font-weight:500;display:inline-flex;align-items:center;gap:3px}
+.src-auto{background:#E8F1FC;color:#005BB5;border:1px solid #BFDBFE}
+.src-ai{background:var(--purple-bg);color:var(--purple);border:1px solid #C7D2FE}
+.src-user{background:var(--green-bg);color:var(--green-dark);border:1px solid #A7F3D0}
+
+/* TOAST */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1D1D1F;color:#fff;padding:10px 20px;border-radius:var(--r);font-size:13px;font-weight:500;box-shadow:var(--sh-lg);opacity:0;pointer-events:none;transition:opacity .25s;z-index:999}
+.toast.show{opacity:1}
+
+/* MISC */
+.section-divider{height:1px;background:var(--border);margin:24px 0}
+.empty-state{text-align:center;padding:40px 20px;color:var(--text3);font-size:13px}
+
+@media(max-width:600px){
+  .app{padding:20px 16px 60px}
+  .score-big{font-size:48px}
+  .app-title{font-size:26px}
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- HEADER -->
+  <div class="app-header">
+    <div class="app-title">Upsaley Auto-Audit</div>
+    <div class="app-sub">URL eingeben → KI analysiert automatisch alle 12 Dimensionen nach der Upsaley Methode</div>
+  </div>
+
+  <!-- SETUP CARD -->
+  <div class="setup-card" id="setup-card">
+    <div class="setup-title">API-Zugänge & Website-URL</div>
+    <div class="setup-sub">Einmalig einrichten – werden lokal gespeichert und nie weitergegeben.</div>
+
+    <div class="api-grid">
+      <div>
+        <div class="field-label">Anthropic API-Key <span style="color:var(--red)">*</span></div>
+        <input class="field-input" type="password" id="anthropic-key" placeholder="sk-ant-api03-…" autocomplete="off"/>
+        <div class="api-hint">Holen unter <a href="https://console.anthropic.com/settings/keys" target="_blank">console.anthropic.com/settings/keys</a> → „Create Key"</div>
+      </div>
+      <div>
+        <div class="field-label">Google PageSpeed API-Key <span style="color:var(--text3)">(optional)</span></div>
+        <input class="field-input" type="password" id="pagespeed-key" placeholder="AIzaSy…" autocomplete="off"/>
+        <div class="api-hint">Holen unter <a href="https://developers.google.com/speed/docs/insights/v5/get-started" target="_blank">Google Cloud Console</a> → APIs → PageSpeed Insights</div>
+      </div>
+    </div>
+
+    <div class="field-label">Website-URL analysieren</div>
+    <div class="url-row">
+      <div class="url-input-wrap">
+        <input class="field-input" type="url" id="target-url" placeholder="https://meineagentur.de" />
+        <div class="api-hint" style="margin-top:5px">Die KI ruft die Seite ab, analysiert Performance, Copy, Design und bewertet alle 12 Dimensionen</div>
+      </div>
+      <button class="btn btn-primary" id="start-btn" onclick="startAudit()">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" stroke="white" stroke-width="1.5"/><path d="M6 5.5l4 2.5-4 2.5V5.5z" fill="white"/></svg>
+        Analyse starten
+      </button>
+    </div>
+
+    <div style="margin-top:16px;padding:12px 14px;background:var(--bg3);border-radius:var(--r);border:1px solid var(--border)">
+      <div style="font-size:12px;color:var(--text2);font-weight:500;margin-bottom:4px">🔍 Was passiert automatisch:</div>
+      <div style="font-size:12px;color:var(--text3);line-height:1.7">
+        <b>Schritt 1:</b> PageSpeed API → Performance-Score, LCP, CLS, INP, Mobile-Score (Dim 11 + 9) &nbsp;|&nbsp;
+        <b>Schritt 2:</b> Website-Inhalt abrufen → Claude analysiert Value Prop, Copy, Blickführung, Social Proof, Pricing, Trust (Dim 1–8) &nbsp;|&nbsp;
+        <b>Schritt 3:</b> Kurz-Fragebogen für Daten die KI nicht sehen kann (GA4, Consent, interne Metriken) &nbsp;|&nbsp;
+        <b>Schritt 4:</b> Finaler Report mit Score, Befunden und priorisierten Maßnahmen
+      </div>
+    </div>
+  </div>
+
+  <!-- PROGRESS -->
+  <div class="progress-card" id="progress-card">
+    <div class="progress-title">Analyse läuft…</div>
+    <div class="progress-steps" id="progress-steps"></div>
+  </div>
+
+  <!-- FOLLOW-UP FRAGEBOGEN -->
+  <div class="followup-card" id="followup-card">
+    <div class="followup-title">Kurz-Fragebogen</div>
+    <div class="followup-sub">Ein paar Fragen zu Dingen, die ich nicht automatisch sehen kann. Bitte kurz beantworten – dauert ~2 Minuten.</div>
+    <div class="q-list" id="q-list"></div>
+    <div class="followup-actions">
+      <button class="btn btn-ghost" onclick="skipFollowup()">Überspringen</button>
+      <button class="btn btn-primary" onclick="submitFollowup()">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7h10M8 3l4 4-4 4" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Analyse abschließen
+      </button>
+    </div>
+  </div>
+
+  <!-- RESULTS -->
+  <div class="results-section" id="results-section">
+    <div class="results-header">
+      <div>
+        <div class="results-title">Audit-Ergebnis</div>
+        <div class="results-url" id="results-url"></div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-ghost" onclick="resetAudit()">↺ Neue Analyse</button>
+        <button class="btn btn-primary" onclick="exportReport()">↓ Report exportieren</button>
+      </div>
+    </div>
+
+    <div class="score-hero" id="score-hero"></div>
+    <div class="dims-grid" id="dims-grid"></div>
+
+    <div class="export-bar">
+      <div class="export-info">
+        <b>Report bereit.</b> Exportiere als JSON für das Upsaley-Dashboard oder als lesbaren Text.
+      </div>
+      <div class="export-btns">
+        <button class="btn btn-ghost" onclick="exportDashboard()">→ Im Dashboard öffnen</button>
+        <button class="btn btn-primary" onclick="exportReport()">↓ JSON exportieren</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const STORAGE = 'upsaley-auto-v1';
+const DIM_META = [
+  {id:1,title:"Limbic Map Profiling",      weight:8,  color:"#4F46E5",bg:"#EEF2FF",cat:"Psychologie"},
+  {id:2,title:"Value Proposition",          weight:10, color:"#059669",bg:"#ECFDF5",cat:"Botschaft"},
+  {id:3,title:"Blickführung (Gaze Cueing)", weight:9,  color:"#0071E3",bg:"#E8F1FC",cat:"Aufmerksamkeit"},
+  {id:4,title:"Neuro-Texting / CTA-Friction",weight:9, color:"#B45309",bg:"#FEF3C7",cat:"Copy"},
+  {id:5,title:"Formular-Friction",           weight:7,  color:"#BE185D",bg:"#FDF2F8",cat:"Conversion"},
+  {id:6,title:"NeuroPricing",                weight:8,  color:"#92400E",bg:"#FFFBEB",cat:"Monetarisierung"},
+  {id:7,title:"Social Proof",                weight:8,  color:"#166534",bg:"#F0FDF4",cat:"Vertrauen"},
+  {id:8,title:"Dringlichkeit",               weight:7,  color:"#991B1B",bg:"#FEF2F2",cat:"Psychologie"},
+  {id:9,title:"Mobile Optimierung",          weight:7,  color:"#0071E3",bg:"#E8F1FC",cat:"Technik"},
+  {id:10,title:"Proof of Outcomes",          weight:6,  color:"#166534",bg:"#F0FDF4",cat:"Vertrauen"},
+  {id:11,title:"Page Performance",           weight:9,  color:"#4F46E5",bg:"#EEF2FF",cat:"Technik"},
+  {id:12,title:"Datenschutz / Consent",      weight:2,  color:"#374151",bg:"#F9FAFB",cat:"Compliance"},
+];
+
+const FOLLOWUP_QUESTIONS = [
+  {dimId:1, dim:"Dim 1", label:"Wer ist Ihre primäre Zielgruppe?", type:"options", options:["Selbstständige / Freelancer","Kleine Unternehmen (KMU)","Mittelstand","Enterprise / Konzerne","Endverbraucher (B2C)","Gemischt"]},
+  {dimId:5, dim:"Dim 5", label:"Haben Sie Formular-Tracking aktiv (GA4, Clarity, Hotjar)?", type:"options", options:["Ja – GA4 + Clarity","Ja – nur GA4","Nein","Weiß ich nicht"]},
+  {dimId:5, dim:"Dim 5", label:"Wie viele Pflichtfelder hat Ihr Hauptformular?", type:"options", options:["1–2 Felder","3–4 Felder","5–7 Felder","Mehr als 7 Felder","Kein Formular vorhanden"]},
+  {dimId:8, dim:"Dim 8", label:"Gibt es Dringlichkeits-/Knappheits-Elemente auf der Seite?", type:"options", options:["Ja – echter Countdown / echte Kapazität","Ja – aber eher symbolisch","Nein","Ist geplant"]},
+  {dimId:10,dim:"Dim 10",label:"Haben Sie Fallstudien oder messbare Ergebnisse auf der Seite?", type:"options", options:["Ja – mit konkreten Zahlen","Ja – aber ohne Zahlen","Nein","In Arbeit"]},
+  {dimId:12,dim:"Dim 12",label:"Ist Consent Mode V2 aktiv auf Ihrer Website?", type:"options", options:["Ja – korrekt konfiguriert","Ja – aber unsicher ob korrekt","Nein","Weiß ich nicht"]},
+  {dimId:0, dim:"Allgemein",label:"Was ist Ihr wichtigstes Conversion-Ziel der Website?", type:"text", placeholder:"z.B. Kontaktanfragen generieren, Newsletter-Anmeldungen, Produkt-Demos buchen…"},
+];
+
+let state = {
+  anthropicKey: '', pagespeedKey: '', targetUrl: '',
+  pagespeedData: null, pageContent: null,
+  followupAnswers: {}, auditResult: null,
+};
+
+// Load saved keys
+function loadState() {
+  try {
+    const s = localStorage.getItem(STORAGE);
+    if (s) {
+      const d = JSON.parse(s);
+      if (d.anthropicKey) { state.anthropicKey = d.anthropicKey; document.getElementById('anthropic-key').value = '••••••••'; }
+      if (d.pagespeedKey) { state.pagespeedKey = d.pagespeedKey; document.getElementById('pagespeed-key').value = '••••••••'; }
+    }
+  } catch(e) {}
+}
+
+function saveKeys() {
+  const ak = document.getElementById('anthropic-key').value;
+  const pk = document.getElementById('pagespeed-key').value;
+  if (ak && ak !== '••••••••') state.anthropicKey = ak;
+  if (pk && pk !== '••••••••') state.pagespeedKey = pk;
+  try { localStorage.setItem(STORAGE, JSON.stringify({anthropicKey: state.anthropicKey, pagespeedKey: state.pagespeedKey})); } catch(e){}
+}
+
+function scoreColor(s) {
+  if (s === null || s === undefined) return '#AEAEB2';
+  if (s < 40) return '#DC2626'; if (s < 70) return '#D97706';
+  if (s < 85) return '#059669'; return '#4F46E5';
+}
+
+function calcTotal(scores) {
+  let ws = 0, tw = 0;
+  DIM_META.forEach(d => { if (scores[d.id] !== undefined) { ws += scores[d.id] * d.weight; tw += d.weight; } });
+  return tw > 0 ? Math.round(ws / tw) : 0;
+}
+
+function showToast(msg, dur = 3000) {
+  const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), dur);
+}
+
+// PROGRESS STEPS
+const STEPS = [
+  {id:'pagespeed', icon:'⚡', label:'PageSpeed Insights', detail:'Performance, LCP, CLS, INP, Mobile-Score abrufen…'},
+  {id:'content',   icon:'🌐', label:'Website-Inhalt analysieren', detail:'Seite abrufen und strukturieren…'},
+  {id:'ai1',       icon:'🧠', label:'KI-Analyse: Copy & Design', detail:'Value Prop, Headlines, CTAs, Blickführung bewerten…'},
+  {id:'ai2',       icon:'🔍', label:'KI-Analyse: Trust & Pricing', detail:'Social Proof, NeuroPricing, Dringlichkeit, Proof of Outcomes…'},
+  {id:'followup',  icon:'💬', label:'Kurz-Fragebogen', detail:'Fehlende Datenpunkte per Interview ergänzen…'},
+  {id:'final',     icon:'📊', label:'Finalen Score berechnen', detail:'Alle Dimensionen gewichten und Report erstellen…'},
+];
+
+function updateStepDetail(stepId, detail) {
+  const steps = document.querySelectorAll('#progress-steps .prog-step');
+  STEPS.forEach((s, i) => {
+    if (s.id === stepId && steps[i]) {
+      const detailEl = steps[i].querySelector('.prog-detail');
+      if (detailEl) detailEl.textContent = detail;
+    }
+  });
+}
+
+function renderProgress(activeId, doneIds = [], errorId = null) {
+  const c = document.getElementById('progress-steps');
+  c.innerHTML = STEPS.map(s => {
+    const isDone = doneIds.includes(s.id);
+    const isActive = s.id === activeId;
+    const isError = s.id === errorId;
+    let cls = 'prog-step';
+    if (isDone) cls += ' done';
+    else if (isActive) cls += ' active';
+    else if (isError) cls += ' error';
+    const iconCls = isActive ? 'prog-icon spin' : 'prog-icon';
+    const icon = isDone ? '✓' : isError ? '✗' : s.icon;
+    return `<div class="${cls}"><div class="${iconCls}">${icon}</div><div><div class="prog-label">${s.label}</div><div class="prog-detail">${s.detail}</div></div></div>`;
+  }).join('');
+}
+
+async function startAudit() {
+  saveKeys();
+  const url = document.getElementById('target-url').value.trim();
+  if (!url) { showToast('Bitte URL eingeben'); return; }
+  if (!state.anthropicKey) { showToast('Anthropic API-Key fehlt'); return; }
+  if (!url.startsWith('http')) { showToast('URL muss mit https:// beginnen'); return; }
+
+  state.targetUrl = url;
+  state.pagespeedData = null; state.pageContent = null;
+  state.followupAnswers = {}; state.auditResult = null;
+
+  document.getElementById('setup-card').style.display = 'none';
+  document.getElementById('results-section').style.display = 'none';
+  document.getElementById('followup-card').style.display = 'none';
+  document.getElementById('progress-card').style.display = 'block';
+
+  const done = [];
+  renderProgress('pagespeed', done);
+
+  // STEP 1: PageSpeed
+  let psData = null;
+  try {
+    updateStepDetail('pagespeed', 'Verbinde mit Google PageSpeed API…');
+    psData = await fetchPageSpeed(url);
+    state.pagespeedData = psData;
+    done.push('pagespeed');
+    renderProgress('content', done);
+  } catch(e) {
+    console.warn('PageSpeed failed:', e);
+    updateStepDetail('pagespeed', '⚠ Übersprungen: ' + e.message + ' – KI schätzt Performance aus URL');
+    done.push('pagespeed');
+    renderProgress('content', done);
+  }
+
+  // STEP 2: Fetch page content
+  let pageText = '';
+  try {
+    updateStepDetail('content', 'Seite wird über CORS-Proxy abgerufen…');
+    pageText = await fetchPageContent(url);
+    state.pageContent = pageText;
+    done.push('content');
+    renderProgress('ai1', done);
+  } catch(e) {
+    console.warn('Content fetch failed:', e);
+    updateStepDetail('content', '⚠ Übersprungen: Proxy nicht erreichbar – KI analysiert URL und Metadaten');
+    done.push('content');
+    renderProgress('ai1', done);
+  }
+
+  // STEP 3: AI Analysis Pass 1 (Copy, Design, VP)
+  let aiResult1 = null;
+  try {
+    aiResult1 = await runAIAnalysis1(url, pageText, psData);
+    done.push('ai1');
+    renderProgress('ai2', done);
+  } catch(e) {
+    console.error('AI1 failed:', e);
+    document.getElementById('progress-card').style.display = 'none';
+    document.getElementById('setup-card').style.display = 'block';
+    showToast('Fehler bei KI-Analyse: ' + e.message, 5000);
+    return;
+  }
+
+  // STEP 4: AI Analysis Pass 2 (Trust, Pricing, Urgency)
+  let aiResult2 = null;
+  try {
+    aiResult2 = await runAIAnalysis2(url, pageText, aiResult1);
+    done.push('ai2');
+    renderProgress('followup', done);
+  } catch(e) {
+    console.error('AI2 failed:', e);
+    done.push('ai2');
+    renderProgress('followup', done);
+  }
+
+  // Merge partial results
+  state.auditResult = mergeAIResults(aiResult1, aiResult2, psData);
+
+  // STEP 5: Show followup
+  document.getElementById('progress-card').style.display = 'none';
+  showFollowup(done, state.auditResult);
+}
+
+async function fetchWithTimeout(url, ms = 15000) {
+  // AbortSignal.timeout() kann in manchen Browsern nicht geklont werden →
+  // stattdessen manuellen AbortController mit setTimeout nutzen
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), ms);
+  try {
+    const r = await fetch(url, { signal: controller.signal });
+    return r;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function fetchPageSpeed(url) {
+  const apiKey = state.pagespeedKey;
+  // PageSpeed direkt aufrufen – kein CORS-Problem da öffentliche API
+  // Ohne Key: kostenlos, aber rate-limited (25 Anfragen/Tag)
+  // Mit Key:  25.000 Anfragen/Tag
+  const strategies = ['mobile', 'desktop'];
+  const results = {};
+  for (const strategy of strategies) {
+    const endpoint = `https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url=${encodeURIComponent(url)}&strategy=${strategy}${apiKey ? '&key=' + apiKey : ''}`;
+    const r = await fetchWithTimeout(endpoint, 20000);
+    if (!r.ok) {
+      const err = await r.json().catch(() => ({}));
+      throw new Error(err?.error?.message || 'PageSpeed HTTP ' + r.status);
+    }
+    results[strategy] = await r.json();
+  }
+  return results;
+}
+
+async function fetchPageContent(url) {
+  // Mehrere CORS-Proxies als Fallback
+  const proxies = [
+    `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`,
+    `https://corsproxy.io/?${encodeURIComponent(url)}`,
+  ];
+
+  for (const proxyUrl of proxies) {
+    try {
+      const r = await fetchWithTimeout(proxyUrl, 15000);
+      if (!r.ok) continue;
+
+      // allorigins gibt {contents: "..."} zurück, corsproxy gibt HTML direkt
+      const isAllOrigins = proxyUrl.includes('allorigins');
+      let html = '';
+      if (isAllOrigins) {
+        const data = await r.json();
+        html = data.contents || '';
+      } else {
+        html = await r.text();
+      }
+
+      // HTML → lesbarer Text
+      const tmp = document.createElement('div');
+      tmp.innerHTML = html;
+      // Skripte und Styles entfernen
+      tmp.querySelectorAll('script,style,noscript,svg').forEach(el => el.remove());
+      const text = (tmp.innerText || tmp.textContent || '').replace(/\s+/g,' ').trim();
+      if (text.length > 100) return text.substring(0, 9000);
+    } catch(e) {
+      console.warn('Proxy failed:', proxyUrl, e.message);
+    }
+  }
+  throw new Error('Alle Proxies fehlgeschlagen');
+}
+
+async function callClaude(messages, maxTokens = 2000) {
+  const r = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: maxTokens,
+      messages,
+    })
+  });
+  if (!r.ok) {
+    const err = await r.json().catch(() => ({}));
+    throw new Error(err.error?.message || 'API Error ' + r.status);
+  }
+  const data = await r.json();
+  return data.content.map(b => b.text || '').join('');
+}
+
+async function runAIAnalysis1(url, pageText, psData) {
+  const psContext = psData ? buildPSContext(psData) : 'PageSpeed-Daten nicht verfügbar.';
+  const prompt = `Du bist ein Neuro-Webdesign-Experte nach der Upsaley Methode. Analysiere diese Website.
+
+URL: ${url}
+PageSpeed-Daten: ${psContext}
+Seiteninhalt (Text):
+${pageText || 'Inhalt konnte nicht abgerufen werden.'}
+
+Bewerte folgende Dimensionen mit Score 0-100 und kurzer Begründung + 3 konkreten Maßnahmen:
+- Dim 2: Value Proposition (Klarheit der Kernbotschaft, Headline-Qualität, 5-Sek-Test-Tauglichkeit)
+- Dim 3: Blickführung (CTA-Sichtbarkeit, visuelle Hierarchie, Above-the-fold)
+- Dim 4: Neuro-Texting/CTA-Friction (Flesch-Score schätzen, CTA-Texte, Begründungen, Framing)
+- Dim 11: Page Performance (aus PageSpeed-Daten)
+- Dim 9: Mobile Optimierung (aus PageSpeed-Daten)
+
+Antworte NUR als valides JSON ohne Backticks:
+{
+  "dims": {
+    "2": {"score": 0-100, "verdict": "Ein Satz Kernbefund", "source": "ai", "findings": "2-3 Sätze Analyse", "actions": ["Maßnahme 1 mit konkretem Beispiel", "Maßnahme 2", "Maßnahme 3"]},
+    "3": {"score": 0-100, "verdict": "...", "source": "ai", "findings": "...", "actions": ["...","...","..."]},
+    "4": {"score": 0-100, "verdict": "...", "source": "ai", "findings": "...", "actions": ["...","...","..."]},
+    "11": {"score": 0-100, "verdict": "...", "source": "auto", "findings": "...", "actions": ["...","...","..."]},
+    "9": {"score": 0-100, "verdict": "...", "source": "auto", "findings": "...", "actions": ["...","...","..."]}
+  }
+}`;
+
+  const text = await callClaude([{role:'user', content: prompt}], 2500);
+  return JSON.parse(text.replace(/```json|```/g,'').trim());
+}
+
+async function runAIAnalysis2(url, pageText, prev) {
+  const prompt = `Du bist ein Neuro-Webdesign-Experte nach der Upsaley Methode. Analysiere diese Website weiter.
+
+URL: ${url}
+Seiteninhalt:
+${pageText || 'Inhalt nicht verfügbar.'}
+Bisherige Ergebnisse (andere Dimensionen bereits bewertet): ${JSON.stringify(prev?.dims || {})}
+
+Bewerte jetzt:
+- Dim 1: Limbic Map Profiling (erkennbarer Limbic-Typ, Farbklima, Tonalität, Bildsprache)
+- Dim 6: NeuroPricing (Preistransparenz, Decoy-Struktur, Preisdarstellung)
+- Dim 7: Social Proof (Reviews, Testimonials, Logos, konkrete Kennzahlen, Vertrauen)
+- Dim 8: Dringlichkeit (Knappheits-Elemente, Ehrlichkeit, Wirksamkeit)
+- Dim 10: Proof of Outcomes (Fallstudien, Vorher/Nachher-Zahlen, Ergebnis-Belege)
+
+Antworte NUR als valides JSON ohne Backticks:
+{
+  "dims": {
+    "1": {"score": 0-100, "verdict": "...", "source": "ai", "findings": "...", "actions": ["...","...","..."]},
+    "6": {"score": 0-100, "verdict": "...", "source": "ai", "findings": "...", "actions": ["...","...","..."]},
+    "7": {"score": 0-100, "verdict": "...", "source": "ai", "findings": "...", "actions": ["...","...","..."]},
+    "8": {"score": 0-100, "verdict": "...", "source": "ai", "findings": "...", "actions": ["...","...","..."]},
+    "10": {"score": 0-100, "verdict": "...", "source": "ai", "findings": "...", "actions": ["...","...","..."]}
+  }
+}`;
+
+  const text = await callClaude([{role:'user', content: prompt}], 2500);
+  return JSON.parse(text.replace(/```json|```/g,'').trim());
+}
+
+function buildPSContext(psData) {
+  try {
+    const m = psData.mobile?.lighthouseResult?.categories;
+    const d = psData.desktop?.lighthouseResult?.categories;
+    const mAud = psData.mobile?.lighthouseResult?.audits;
+    return `Mobile: Performance ${Math.round((m?.performance?.score||0)*100)}, Accessibility ${Math.round((m?.accessibility?.score||0)*100)}, SEO ${Math.round((m?.seo?.score||0)*100)} | Desktop: Performance ${Math.round((d?.performance?.score||0)*100)} | LCP: ${mAud?.['largest-contentful-paint']?.displayValue||'n/a'} | CLS: ${mAud?.['cumulative-layout-shift']?.displayValue||'n/a'} | TBT: ${mAud?.['total-blocking-time']?.displayValue||'n/a'}`;
+  } catch(e) { return 'PageSpeed-Daten fehlerhaft.'; }
+}
+
+function mergeAIResults(r1, r2, psData) {
+  const dims = {...(r1?.dims||{}), ...(r2?.dims||{})};
+
+  // Override with real PageSpeed scores if available
+  if (psData) {
+    try {
+      const perfM = Math.round((psData.mobile?.lighthouseResult?.categories?.performance?.score||0)*100);
+      const perfD = Math.round((psData.desktop?.lighthouseResult?.categories?.performance?.score||0)*100);
+      const accM  = Math.round((psData.mobile?.lighthouseResult?.categories?.accessibility?.score||0)*100);
+      if (dims['11']) { dims['11'].score = Math.round((perfM*0.6+perfD*0.4)); dims['11'].source = 'auto'; }
+      if (dims['9'])  { dims['9'].score  = Math.round((perfM*0.7+accM*0.3)); dims['9'].source  = 'auto'; }
+    } catch(e) {}
+  }
+
+  return { dims, url: state.targetUrl, timestamp: new Date().toISOString() };
+}
+
+function showFollowup(doneProg, partialResult) {
+  document.getElementById('followup-card').style.display = 'block';
+  const list = document.getElementById('q-list');
+  list.innerHTML = FOLLOWUP_QUESTIONS.map((q,i) => {
+    const catC = q.dimId > 0 ? getDimColor(q.dimId) : {c:'#374151',bg:'#F9FAFB'};
+    if (q.type === 'options') {
+      return `<div class="q-item">
+        <div class="q-label"><span class="q-dim" style="background:${catC.bg};color:${catC.c}">${q.dim}</span>${q.label}</div>
+        <div class="q-options">${q.options.map((o,oi)=>`<button class="q-opt" onclick="selectOpt(${i},${oi},this)">${o}</button>`).join('')}</div>
+      </div>`;
+    } else {
+      return `<div class="q-item">
+        <div class="q-label"><span class="q-dim" style="background:${catC.bg};color:${catC.c}">${q.dim}</span>${q.label}</div>
+        <textarea class="q-text" rows="2" placeholder="${q.placeholder||''}" id="qt-${i}"></textarea>
+      </div>`;
+    }
+  }).join('');
+}
+
+function getDimColor(id) {
+  const d = DIM_META.find(x=>x.id===id);
+  return d ? {c:d.color,bg:d.bg} : {c:'#374151',bg:'#F9FAFB'};
+}
+
+function selectOpt(qIdx, optIdx, el) {
+  const parent = el.closest('.q-options');
+  parent.querySelectorAll('.q-opt').forEach(b=>b.classList.remove('selected'));
+  el.classList.add('selected');
+  state.followupAnswers[qIdx] = FOLLOWUP_QUESTIONS[qIdx].options[optIdx];
+}
+
+async function submitFollowup() {
+  // Collect text answers
+  FOLLOWUP_QUESTIONS.forEach((q,i)=>{
+    if (q.type==='text') {
+      const el = document.getElementById('qt-'+i);
+      if (el && el.value) state.followupAnswers[i] = el.value;
+    }
+  });
+
+  document.getElementById('followup-card').style.display = 'none';
+  document.getElementById('progress-card').style.display = 'block';
+  const done = ['pagespeed','content','ai1','ai2','followup'];
+  renderProgress('final', done);
+
+  await finalizeAudit(done);
+}
+
+async function skipFollowup() {
+  document.getElementById('followup-card').style.display = 'none';
+  document.getElementById('progress-card').style.display = 'block';
+  const done = ['pagespeed','content','ai1','ai2','followup'];
+  renderProgress('final', done);
+  await finalizeAudit(done);
+}
+
+async function finalizeAudit(done) {
+  // Build followup context
+  const fContext = Object.entries(state.followupAnswers).map(([i,a])=>`${FOLLOWUP_QUESTIONS[i]?.label}: ${a}`).join('\n');
+
+  // Ask Claude to score remaining dims + refine with followup data
+  const prompt = `Du bist Neuro-Webdesign-Experte nach der Upsaley Methode.
+
+Bisherige Analyse-Ergebnisse:
+${JSON.stringify(state.auditResult?.dims||{}, null, 2)}
+
+Zusätzliche Antworten aus dem Fragebogen:
+${fContext || 'Keine Antworten gegeben.'}
+
+Aufgaben:
+1. Bewerte Dim 5 (Formular-Friction) und Dim 12 (Datenschutz/Consent) basierend auf den Fragebogen-Antworten
+2. Verfeinere Dim 1 (Limbic Profiling) basierend auf der Zielgruppen-Antwort
+3. Passe ggf. Scores der anderen Dims leicht an falls die Fragebogen-Antworten neue Erkenntnisse liefern
+4. Erstelle eine "top3" Liste: die 3 kritischsten Maßnahmen über alle Dimensionen
+
+Antworte NUR als JSON ohne Backticks:
+{
+  "dims": {
+    "5":  {"score":0-100,"verdict":"...","source":"user","findings":"...","actions":["...","...","..."]},
+    "12": {"score":0-100,"verdict":"...","source":"user","findings":"...","actions":["...","...","..."]}
+  },
+  "refinements": {"1": {"score": optional_new_score}},
+  "top3": [
+    {"dim":1-12,"title":"Maßnahmen-Titel","reason":"Warum jetzt?","action":"Konkreter erster Schritt","lift":"Erwarteter Impact"},
+    {"dim":1-12,"title":"...","reason":"...","action":"...","lift":"..."},
+    {"dim":1-12,"title":"...","reason":"...","action":"...","lift":"..."}
+  ]
+}`;
+
+  try {
+    const text = await callClaude([{role:'user', content: prompt}], 2000);
+    const final = JSON.parse(text.replace(/```json|```/g,'').trim());
+
+    // Merge final data
+    const allDims = {...state.auditResult.dims, ...(final.dims||{})};
+    if (final.refinements) {
+      Object.entries(final.refinements).forEach(([id, ref]) => {
+        if (allDims[id] && ref.score !== undefined) allDims[id].score = ref.score;
+      });
+    }
+    state.auditResult = { ...state.auditResult, dims: allDims, top3: final.top3||[] };
+
+    done.push('final');
+    renderProgress(null, done);
+    await new Promise(r => setTimeout(r, 600));
+
+    document.getElementById('progress-card').style.display = 'none';
+    showResults(state.auditResult);
+  } catch(e) {
+    console.error('Final analysis failed:', e);
+    done.push('final');
+    renderProgress(null, done);
+    await new Promise(r => setTimeout(r, 400));
+    document.getElementById('progress-card').style.display = 'none';
+    showResults(state.auditResult);
+  }
+}
+
+function showResults(result) {
+  const sec = document.getElementById('results-section');
+  sec.style.display = 'block';
+  document.getElementById('results-url').textContent = result.url;
+
+  // Score hero
+  const scores = {};
+  Object.entries(result.dims).forEach(([id, d]) => { scores[parseInt(id)] = d.score; });
+  const total = calcTotal(scores);
+  const tc = scoreColor(total);
+  const verdictMap = [[40,'Kritisch – sofortige Maßnahmen erforderlich'],[70,'Optimierungsbedarf – Quick Wins priorisieren'],[85,'Gut – Feinschliff und A/B-Tests'],[101,'Exzellent – skalieren und testen']];
+  const [,verdict] = verdictMap.find(([t])=>total<t)||[null,'Exzellent'];
+
+  const hero = document.getElementById('score-hero');
+  hero.innerHTML = `
+    <div class="score-big" style="color:${tc}">${total}</div>
+    <div class="score-meta">
+      <div class="score-verdict" style="color:${tc}">${verdict}</div>
+      <div class="score-desc">Gesamt-Score nach der Upsaley Methode · ${Object.keys(result.dims).length} von 12 Dimensionen analysiert · ${new Date(result.timestamp).toLocaleDateString('de-DE')}</div>
+      <div class="score-bar-h"><div class="score-bar-h-fill" style="width:${total}%;background:${tc}"></div></div>
+      ${result.top3?.length ? `<div style="margin-top:12px;font-size:12px;font-weight:600;color:var(--text3);margin-bottom:6px">TOP 3 SOFORT-MASSNAHMEN</div>${result.top3.map((t,i)=>`<div style="display:flex;gap:8px;align-items:flex-start;margin-bottom:6px"><div style="width:20px;height:20px;border-radius:50%;background:${scoreColor(30)};color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0">${i+1}</div><div><div style="font-size:12px;font-weight:600;color:var(--text)">${t.title}</div><div style="font-size:11px;color:var(--text3)">${t.action} <span class="lift-chip" style="margin-left:4px">📈 ${t.lift}</span></div></div></div>`).join('')}` : ''}
+    </div>`;
+
+  // Dims
+  const grid = document.getElementById('dims-grid');
+  grid.innerHTML = '';
+  DIM_META.forEach(dm => {
+    const d = result.dims[dm.id];
+    if (!d) return;
+    const sc = d.score;
+    const c = scoreColor(sc);
+    const srcLabel = {auto:'⚡ Auto-Messung', ai:'🧠 KI-Analyse', user:'💬 Aus Fragebogen'}[d.source] || d.source;
+    const srcCls   = {auto:'src-auto', ai:'src-ai', user:'src-user'}[d.source] || 'src-ai';
+
+    const div = document.createElement('div');
+    div.className = 'dim-result';
+    div.innerHTML = `
+      <div class="dim-r-head" onclick="toggleDimResult(this)">
+        <div class="dim-r-num" style="background:${dm.bg};color:${dm.color}">${dm.id}</div>
+        <div class="dim-r-info">
+          <div class="dim-r-title">${dm.title} <span class="source-badge ${srcCls}" style="margin-left:4px">${srcLabel}</span></div>
+          <div class="dim-r-verdict">${d.verdict||''}</div>
+        </div>
+        <div class="dim-r-score" style="color:${c}">${sc}</div>
+        <div style="font-size:11px;color:var(--text4);margin-left:8px;flex-shrink:0">▾</div>
+      </div>
+      <div class="dim-r-bar"><div class="dim-r-bar-fill" style="width:${sc}%;background:${c}"></div></div>
+      <div class="dim-r-body">
+        <div class="r-section">
+          <div class="r-label">Befund</div>
+          <div class="finding-box">${d.findings||'Keine detaillierte Analyse verfügbar.'}</div>
+        </div>
+        <div class="r-section">
+          <div class="r-label">Priorisierte Maßnahmen</div>
+          <div class="action-list">${(d.actions||[]).map((a,i)=>`<div class="action-item"><div class="action-prio" style="background:${i===0?'#DC2626':i===1?'#D97706':'#059669'}">${i+1}</div><div class="action-text">${a}</div></div>`).join('')}</div>
+        </div>
+      </div>`;
+    grid.appendChild(div);
+  });
+
+  sec.scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+function toggleDimResult(head) {
+  const body = head.nextElementSibling.nextElementSibling;
+  body.classList.toggle('open');
+  const chevron = head.querySelector('div:last-child');
+  if (body.classList.contains('open')) chevron.style.transform = 'rotate(180deg)';
+  else chevron.style.transform = '';
+}
+
+function resetAudit() {
+  state.auditResult = null; state.followupAnswers = {};
+  document.getElementById('results-section').style.display = 'none';
+  document.getElementById('setup-card').style.display = 'block';
+  document.getElementById('target-url').value = '';
+}
+
+function exportReport() {
+  if (!state.auditResult) return;
+  const blob = new Blob([JSON.stringify(state.auditResult, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const name = (state.targetUrl.replace(/https?:\/\//,'').replace(/[^a-z0-9]/gi,'_').substring(0,30));
+  a.href = url; a.download = `upsaley_audit_${name}_${new Date().toISOString().slice(0,10)}.json`; a.click();
+  URL.revokeObjectURL(url);
+  showToast('Report exportiert');
+}
+
+function exportDashboard() {
+  // Export in format compatible with main dashboard (index.html)
+  if (!state.auditResult) return;
+  const dashState = {
+    clientName: new URL(state.targetUrl).hostname,
+    scores: {},
+    notes: {},
+    status: {},
+    checks: {},
+  };
+  Object.entries(state.auditResult.dims).forEach(([id, d]) => {
+    dashState.scores[parseInt(id)] = d.score;
+    dashState.notes[parseInt(id)] = `[Auto-Audit ${new Date(state.auditResult.timestamp).toLocaleDateString('de-DE')}]\n${d.verdict}\n\nBefund: ${d.findings}\n\nMaßnahmen:\n${(d.actions||[]).map((a,i)=>`${i+1}. ${a}`).join('\n')}`;
+  });
+  const blob = new Blob([JSON.stringify(dashState, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `upsaley_dashboard_${new URL(state.targetUrl).hostname}_${new Date().toISOString().slice(0,10)}.json`; a.click();
+  URL.revokeObjectURL(url);
+  showToast('Dashboard-Datei exportiert – in index.html importieren!');
+}
+
+// INIT
+loadState();
+</script>
+</body>
+</html>
